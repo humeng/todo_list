@@ -1,9 +1,8 @@
-# ToDoList
-使用Flutter开发的一款App，主要功能是日程管理，根据优先级进行划分，设置时间提醒
+# todo_list
 
-# 包括的主要功能：
-  - 首页：记事本首页，分为四类,重要又急迫、重要但不紧急、紧急但不重要、不紧急也不重要
-  - 列表页：罗列对应分类的日程管理
-  - 详情页：显示对应日程的详细描述，可进行编辑、保存、删除操作
-  - 数据保存到本地数据库SQLlite中
-  - 时间提醒调用手机自带提醒服务
+A new Flutter application that can help you to note something.
+
+## Getting Started
+
+For help getting started with Flutter, view our online
+[documentation](https://flutter.io/).
