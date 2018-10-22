@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:path/path.dart';
-import 'package:todo_list/ViewPage.dart';
-import 'package:todo_list/constant.dart';
-import 'package:todo_list/sqflitehelper.dart';
+import 'package:todo_list/ui/ViewPage.dart';
+import 'package:todo_list/constant/constant.dart';
+import 'package:todo_list/util/sqflitehelper.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:sqflite/sqflite.dart';
 

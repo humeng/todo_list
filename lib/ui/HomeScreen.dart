@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:todo_list/ListPage.dart';
-import 'package:todo_list/constant.dart';
+import 'package:todo_list/ui/ListPage.dart';
+import 'package:todo_list/constant/constant.dart';
 
 class HomeScreen extends StatelessWidget {
   @override
