@@ -122,9 +122,7 @@ class _ListPageState extends State<ListPage> {
           actions: <Widget>[
             new IconButton(
                 icon: new Icon(Icons.add),
-                onPressed: () {
-                  _pushEditPage(context, eventType);
-                })
+                onPressed: () => _pushEditPage(context, eventType))
           ],
           backgroundColor: eventType.color,
         ),
