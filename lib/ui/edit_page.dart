@@ -1,14 +1,16 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:path/path.dart';
 import 'package:todo_list/util/database_helper.dart';
-import 'package:sqflite/sqflite.dart';
-class EditPage extends StatefulWidget {
-  final int id;
-  final String type;
+import 'package:todo_list/constant/event_type.dart';
 
-  EditPage({Key key, @required this.id, @required this.type}) : super(key: key);
+import 'package:todo_list/plugin/alarm_manager.dart';
+
+class EditPage extends StatefulWidget {
+  final Todo todo;
+  final EventType eventType;
+
+  EditPage(this.eventType,{Key key,this.todo}) : super(key: key);
 
   @override
   _EditPageData createState() => new _EditPageData();
@@ -16,24 +18,15 @@ class EditPage extends StatefulWidget {
 
 class _EditPageData extends State<EditPage> {
 
-  DbProvider provider = new DbProvider();
   static String content = "";
   DateTime _dateTime;
-
-  Future<bool> initDB() async{
-    String databasePath = join(await getDatabasesPath(),"db.db");
-    return provider.open(databasePath);
-  }
 
   //文本的控制器
   TextEditingController _controller = TextEditingController();
 
   Future getTodoListFormDB() async {
-    await initDB();
-    if(widget.id != 0){
-      List<Map> mapList = await provider.getTodoById(widget.id);
-      content = mapList[0]["content"];
-      _controller.text=content;
+    if(widget.todo != null ){
+      _controller.text=widget.todo.content;
     }
 
   }
@@ -46,16 +39,15 @@ class _EditPageData extends State<EditPage> {
 
   @override
   Widget build(BuildContext context) {
-    var id = widget.id;
     return new Scaffold(
         appBar: new AppBar(
-            title: new Text('详情'),
+            title: new Text( widget.eventType.event+"详情"),
             elevation: 0.0,
-            backgroundColor: Colors.red[400].withOpacity(0.5),
+            backgroundColor: widget.eventType.color,
             actions: <Widget>[
               IconButton(
                 icon: Icon(Icons.check),
-                onPressed: ()=>saveData(context,_controller.text, widget.type,id),
+                onPressed: ()=>saveData(context,_controller.text, widget.eventType.event,widget.todo),
               )
             ]
         ),
@@ -90,25 +82,19 @@ class _EditPageData extends State<EditPage> {
     }
   }
 
-  void saveData (BuildContext context, String content,String type,int id) async{
-    Todo todo = new Todo();
-    List<Map> result = new List<Map>();
-    result = await provider.getTodoById(id);
-
+  void saveData (BuildContext context, String content,String type,Todo todo) async{
+    if(todo == null){
+      todo = new Todo();
+    }
     todo.type = type;
     todo.content = content;
     todo.isWarning = false;
     todo.warningTime = "";
     todo.isDelete = false;
-    if(result.length == 0){
-      await provider.insert(todo);
-    }else{
-      todo.id = result[0]["id"];
-      todo.createTime = result[0]["createTime"];
-      await provider.update(todo);
-    }
-    await provider.close();
 
-    Navigator.pop(context);
+    //AlarManager.setAlarm(id, event, dateTime)
+    
+    
+    Navigator.pop(context,todo);
   }
 }
