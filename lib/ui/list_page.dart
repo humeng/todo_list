@@ -148,16 +148,17 @@ class _ListPageState extends State<ListPage> {
   }
 
   ///跳转到EditPage
-  void _pushEditPage(BuildContext context, EventType eventType) async {
-    var result = await Navigator.push(context,
+  void _pushEditPage(BuildContext context, EventType eventType) {
+    Navigator.push(context,
         new MaterialPageRoute(builder: (BuildContext context) {
       return EditPage(eventType);
-    }));
-    if(result){
-      setState(() {
-        _loadingState = LoadingState.LOADING;
-      });
-      _getListData();
-    }
+    })).then((result) {
+      if (result) {
+        setState(() {
+          _loadingState = LoadingState.LOADING;
+        });
+        _getListData();
+      }
+    });
   }
 }
