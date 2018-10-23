@@ -23,8 +23,6 @@ class ListPage extends StatefulWidget {
   }
 }
 
-typedef void DatabaseOperationFunction<T, R>({T t, R r});
-
 class _ListPageState extends State<ListPage> {
   final List<Todo> _items = new List();
 
