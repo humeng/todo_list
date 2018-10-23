@@ -39,7 +39,7 @@ class _ListPageState extends State<ListPage> {
   void initState() {
     super.initState();
     _loadingState = LoadingState.LOADING;
-    _getListData();
+    _findTodoList();
   }
 
   @override
@@ -53,12 +53,6 @@ class _ListPageState extends State<ListPage> {
         widget = buildListDataWidget(context);
         break;
       case LoadingState.LOADING_FAIL:
-        widget = new LoadingFailureWidget(() {
-          setState(() {
-            _loadingState = LoadingState.LOADING;
-          });
-          _getListData();
-        });
         break;
     }
     return widget;
@@ -118,14 +112,6 @@ class _ListPageState extends State<ListPage> {
         _insertTodo(todoNew);
       }
     }
-  }
-
-  ///获取列表数据
-  void _getListData() async {
-    await _findTodoList();
-    setState(() {
-      _loadingState = LoadingState.LOADING_SUCCESS;
-    });
   }
 
   ////打开数据库
@@ -198,5 +184,8 @@ class _ListPageState extends State<ListPage> {
     for (var map in mapList) {
       _items.add(Todo.fromMap(map));
     }
+    setState(() {
+      _loadingState = LoadingState.LOADING_SUCCESS;
+    });
   }
 }
