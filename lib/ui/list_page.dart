@@ -23,6 +23,8 @@ class ListPage extends StatefulWidget {
   }
 }
 
+typedef void DatabaseOperationFunction<T, R>({T t, R r});
+
 class _ListPageState extends State<ListPage> {
   final List<Todo> _items = new List();
 
@@ -49,6 +51,9 @@ class _ListPageState extends State<ListPage> {
       case LoadingState.LOADING:
         widget = new LoadingWidget();
         break;
+      case LoadingState.LOADING_SUCCESS:
+        widget = buildListDataWidget(context);
+        break;
       case LoadingState.LOADING_FAIL:
         widget = new LoadingFailureWidget(() {
           setState(() {
@@ -57,55 +62,8 @@ class _ListPageState extends State<ListPage> {
           _getListData();
         });
         break;
-      case LoadingState.LOADING_SUCCESS:
-        widget = buildListDataWidget(context);
-        break;
     }
     return widget;
-  }
-
-  @override
-  void dispose() {
-    if (_dbProvider.dbIsOpen()) {
-      _dbProvider.close();
-    }
-    super.dispose();
-  }
-
-  ///获取数据
-  void _getListData() {
-    _getListDataFromDB().then((isGet) {
-      setState(() {
-        if (isGet) {
-          _loadingState = LoadingState.LOADING_SUCCESS;
-        } else {
-          _loadingState = LoadingState.LOADING_FAIL;
-        }
-      });
-    });
-  }
-
-  ///从数据库中获取列表数据
-  Future<bool> _getListDataFromDB() async {
-    try {
-      if (_dbPath == null) {
-        _dbPath = await getDatabasesPath();
-        _dbPath = join(_dbPath, "todo.db");
-      }
-      if (_dbProvider.db == null || !_dbProvider.dbIsOpen()) {
-        await _dbProvider.open(_dbPath);
-      }
-      List<Map> mapList =
-          await _dbProvider.getListByType(widget._evenType.event);
-      _items.clear();
-      for (var map in mapList) {
-        _items.add(Todo.fromMap(map));
-      }
-      return true;
-    } catch (e) {
-      print(e);
-      return false;
-    }
   }
 
   ///build列表数据组件
@@ -164,9 +122,37 @@ class _ListPageState extends State<ListPage> {
     }
   }
 
+  ///获取列表数据
+  void _getListData() async {
+    await _findTodoList();
+    setState(() {
+      _loadingState = LoadingState.LOADING_SUCCESS;
+    });
+  }
+
+  ////打开数据库
+  Future _openDatabase() async {
+    if (_dbPath == null) {
+      _dbPath = await getDatabasesPath();
+      _dbPath = join(_dbPath, "todo.db");
+    }
+    if (_dbProvider.db == null || !_dbProvider.dbIsOpen()) {
+      await _dbProvider.open(_dbPath);
+    }
+  }
+
+  ///关闭数据库
+  Future _closeDatabase() async {
+    if (_dbProvider.dbIsOpen()) {
+      await _dbProvider.close();
+    }
+  }
+
   ///插入
   void _insertTodo(Todo todoNew) async {
+    await _openDatabase();
     todoNew.id = await _dbProvider.insert(todoNew);
+    await _closeDatabase();
     AlarManager.setAlarm(todoNew.id, todoNew.content, todoNew.warningTime);
     setState(() {
       _items.add(todoNew);
@@ -175,7 +161,9 @@ class _ListPageState extends State<ListPage> {
 
   ///删除
   void _deleteTodo(Todo todo, BuildContext context) async {
+    await _openDatabase();
     int result = await _dbProvider.delete(todo.id);
+    await _closeDatabase();
     if (result == 1) {
       AlarManager.cancelAlarm(todo.id);
       Scaffold.of(context).showSnackBar(
@@ -188,7 +176,9 @@ class _ListPageState extends State<ListPage> {
 
   ///更新
   void _updateTodo(Todo todoNew, Todo todo) async {
+    await _openDatabase();
     int result = await _dbProvider.update(todoNew);
+    await _closeDatabase();
     if (result == 1) {
       if (todoNew.isWarning) {
         AlarManager.setAlarm(todoNew.id, todoNew.content, todoNew.warningTime);
@@ -198,6 +188,17 @@ class _ListPageState extends State<ListPage> {
       setState(() {
         todo = todoNew;
       });
+    }
+  }
+
+  ///查找
+  Future _findTodoList() async {
+    await _openDatabase();
+    List<Map> mapList = await _dbProvider.getListByType(widget._evenType.event);
+    await _closeDatabase();
+    _items.clear();
+    for (var map in mapList) {
+      _items.add(Todo.fromMap(map));
     }
   }
 }
