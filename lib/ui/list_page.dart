@@ -63,11 +63,11 @@ class _ListPageState extends State<ListPage> {
   }
 
   @override
-  void dispose() {
-    super.dispose();
+  void deactivate() {
     if (_dbProvider.dbIsOpen()) {
       _dbProvider.close();
     }
+    super.deactivate();
   }
 
   ///获取数据
@@ -95,6 +95,7 @@ class _ListPageState extends State<ListPage> {
       }
       List<Map> mapList =
           await _dbProvider.getListByType(widget._evenType.event);
+      _items.clear();
       for (var map in mapList) {
         _items.add(Todo.fromMap(map));
       }
@@ -148,17 +149,22 @@ class _ListPageState extends State<ListPage> {
   }
 
   ///跳转到EditPage
-  void _pushEditPage(BuildContext context, EventType eventType, {Todo todo}) {
-    Navigator.push(context,
+  void _pushEditPage(BuildContext context, EventType eventType,
+      {Todo todo}) async {
+    Todo todoNew = await Navigator.push<Todo>(context,
         new MaterialPageRoute(builder: (BuildContext context) {
       return EditPage(eventType, todo: todo);
-    })).then((result) {
-      if (result) {
-        setState(() {
-          _loadingState = LoadingState.LOADING;
-        });
-        _getListData();
-      }
-    });
+    }));
+    if (todoNew != null) {
+      setState(() {
+        if (todoNew.id <= _items.length - 1) {
+          _items[todoNew.id] = todoNew;
+          _dbProvider.update(todoNew);
+        } else {
+          _items.add(todoNew);
+          _dbProvider.insert(todoNew);
+        }
+      });
+    }
   }
 }
