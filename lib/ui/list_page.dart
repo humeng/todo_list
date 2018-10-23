@@ -135,7 +135,7 @@ class _ListPageState extends State<ListPage> {
                   title: new Text(todo.content),
                   subtitle: new Text(todo.warningTime),
                   onTap: () {
-                    _pushEditPage(context, eventType);
+                    _pushEditPage(context, eventType, todo: todo);
                   },
                 ),
                 onDismissed: (DismissDirection direction) {
@@ -148,10 +148,10 @@ class _ListPageState extends State<ListPage> {
   }
 
   ///跳转到EditPage
-  void _pushEditPage(BuildContext context, EventType eventType) {
+  void _pushEditPage(BuildContext context, EventType eventType, {Todo todo}) {
     Navigator.push(context,
         new MaterialPageRoute(builder: (BuildContext context) {
-      return EditPage(eventType);
+      return EditPage(eventType, todo: todo);
     })).then((result) {
       if (result) {
         setState(() {

@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:todo_list/constant/event_type.dart';
+import 'package:todo_list/util/database_helper.dart';
 
 class EditPage extends StatefulWidget {
   final EventType _eventType;
 
-  EditPage(this._eventType, {Key key}) : super(key: key);
+  Todo _todo;
+
+  EditPage(this._eventType, {Todo todo, Key key}) : super(key: key) {
+    this._todo = todo;
+  }
 
   @override
   State<StatefulWidget> createState() {
