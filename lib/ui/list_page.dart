@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import 'package:todo_list/constant/event_type.dart';
 import 'package:todo_list/constant/loading_state.dart';
+import 'package:todo_list/plugin/alarm_manager.dart';
 import 'package:todo_list/ui/edit_page.dart';
 import 'package:todo_list/util/database_helper.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:todo_list/widget/load_failure_widget.dart';
 import 'package:todo_list/widget/loading_widget.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 
 class ListPage extends StatefulWidget {
   final EventType _evenType;
@@ -130,20 +132,20 @@ class _ListPageState extends State<ListPage> {
             itemCount: _items.length,
             itemBuilder: (BuildContext context, int index) {
               var todo = _items[index];
-              return new Dismissible(
-                key: new Key(todo.warningTime),
+              return new Slidable(
+                delegate: SlidableScrollDelegate(),
+                actionExtentRatio: 0.25,
+                secondaryActions: <Widget>[
+                  IconSlideAction(
+                      caption: 'Delete',
+                      color: Colors.red,
+                      icon: Icons.delete,
+                      onTap: () => _deleteTodo(todo, context)),
+                ],
                 child: new ListTile(
-                  title: new Text(todo.content),
-                  subtitle: new Text(todo.warningTime),
-                  onTap: () {
-                    _pushEditPage(context, eventType, todo: todo);
-                  },
-                ),
-                onDismissed: (DismissDirection direction) {
-                  _items.removeAt(index);
-                  Scaffold.of(context).showSnackBar(new SnackBar(
-                      content: new Text("${todo.warningTime} 日期事件已经删除")));
-                },
+                    title: new Text(todo.content),
+                    subtitle: new Text(todo.warningTime),
+                    onTap: () => _pushEditPage(context, eventType, todo: todo)),
               );
             }));
   }
@@ -156,14 +158,47 @@ class _ListPageState extends State<ListPage> {
       return EditPage(eventType, todo: todo);
     }));
     if (todoNew != null) {
+      if (todoNew.id != null) {
+        _updateTodo(todoNew, todo);
+      } else {
+        _insertTodo(todoNew);
+      }
+    }
+  }
+
+  ///插入
+  void _insertTodo(Todo todoNew) async {
+    todoNew.id = await _dbProvider.insert(todoNew);
+    AlarManager.setAlarm(todoNew.id, todoNew.content, todoNew.warningTime);
+    setState(() {
+      _items.add(todoNew);
+    });
+  }
+
+  ///删除
+  void _deleteTodo(Todo todo, BuildContext context) async {
+    int result = await _dbProvider.delete(todo.id);
+    if (result == 1) {
+      AlarManager.cancelAlarm(todo.id);
+      Scaffold.of(context).showSnackBar(
+          new SnackBar(content: new Text("${todo.warningTime} 日期事件已经删除")));
       setState(() {
-        if (todoNew.id != null) {
-          _items[todoNew.id] = todoNew;
-          _dbProvider.update(todoNew);
-        } else {
-          _items.add(todoNew);
-          _dbProvider.insert(todoNew);
-        }
+        _items.remove(todo);
+      });
+    }
+  }
+
+  ///更新
+  void _updateTodo(Todo todoNew, Todo todo) async {
+    int result = await _dbProvider.update(todoNew);
+    if (result == 1) {
+      if (todoNew.isWarning) {
+        AlarManager.setAlarm(todoNew.id, todoNew.content, todoNew.warningTime);
+      } else {
+        AlarManager.cancelAlarm(todoNew.id);
+      }
+      setState(() {
+        todo = todoNew;
       });
     }
   }
