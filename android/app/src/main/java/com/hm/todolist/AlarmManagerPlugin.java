@@ -30,16 +30,22 @@ public class AlarmManagerPlugin {
             public void onMethodCall(MethodCall methodCall, MethodChannel.Result result) {
                 switch (methodCall.method) {
                     case "setAlarm":
-                        int id = methodCall.argument("id");
+                        int setId = methodCall.argument("id");
                         String event = methodCall.argument("event");
                         String dateTime = methodCall.argument("time");
 
-                        setAlarm(context, id, event, dateTime);
+                        setAlarm(context, setId, event, dateTime);
+                        break;
+                    case "cancelAlarm":
+                        int cancelId = methodCall.argument("id");
+
+                        cancelAlarm(context,cancelId);
                         break;
                 }
             }
         });
     }
+
 
 
     /**
@@ -65,4 +71,20 @@ public class AlarmManagerPlugin {
             mAlarmManager.set(AlarmManager.RTC_WAKEUP, date.getTime(), pendingIntent);
         }
     }
+
+    /**
+     * 取消闹钟提醒
+     * @param context
+     * @param cancelId
+     */
+    private static void cancelAlarm(Context context, int cancelId) {
+        Intent intent = new Intent();
+        intent.setAction("net.tztech.notepad.ALARM");
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(context, cancelId, intent,
+                PendingIntent.FLAG_UPDATE_CURRENT);
+
+        mAlarmManager.cancel(pendingIntent);
+    }
+
+
 }
