@@ -178,7 +178,7 @@ class _ListPageState extends State<ListPage> {
   ///查找
   Future _findTodoList() async {
     await _openDatabase();
-    List<Map> mapList = await _dbProvider.getListByType(widget._evenType.event);
+    List<Map> mapList = await _dbProvider.getListByType(widget._evenType.index.toString());
     await _closeDatabase();
     _items.clear();
     for (var map in mapList) {
