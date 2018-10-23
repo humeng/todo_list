@@ -65,11 +65,11 @@ class _ListPageState extends State<ListPage> {
   }
 
   @override
-  void deactivate() {
+  void dispose() {
     if (_dbProvider.dbIsOpen()) {
       _dbProvider.close();
     }
-    super.deactivate();
+    super.dispose();
   }
 
   ///获取数据
