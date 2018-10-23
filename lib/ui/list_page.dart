@@ -157,7 +157,7 @@ class _ListPageState extends State<ListPage> {
     }));
     if (todoNew != null) {
       setState(() {
-        if (todoNew.id <= _items.length - 1) {
+        if (todoNew.id != null) {
           _items[todoNew.id] = todoNew;
           _dbProvider.update(todoNew);
         } else {
