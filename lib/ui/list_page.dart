@@ -8,7 +8,6 @@ import 'package:todo_list/plugin/alarm_manager.dart';
 import 'package:todo_list/ui/edit_page.dart';
 import 'package:todo_list/util/database_helper.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:todo_list/widget/load_failure_widget.dart';
 import 'package:todo_list/widget/loading_widget.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 
@@ -29,9 +28,6 @@ class _ListPageState extends State<ListPage> {
   ///是否正在加载
   LoadingState _loadingState;
 
-  ///数据库路径
-  String _dbPath;
-
   ///数据库处理器
   final DbProvider _dbProvider = new DbProvider();
 
@@ -49,10 +45,10 @@ class _ListPageState extends State<ListPage> {
       case LoadingState.LOADING:
         widget = new LoadingWidget();
         break;
-      case LoadingState.LOADING_SUCCESS:
+      case LoadingState.LOAD_SUCCESS:
         widget = buildListDataWidget(context);
         break;
-      case LoadingState.LOADING_FAIL:
+      default:
         break;
     }
     return widget;
@@ -116,20 +112,14 @@ class _ListPageState extends State<ListPage> {
 
   ////打开数据库
   Future _openDatabase() async {
-    if (_dbPath == null) {
-      _dbPath = await getDatabasesPath();
-      _dbPath = join(_dbPath, "todo.db");
-    }
-    if (_dbProvider.db == null || !_dbProvider.dbIsOpen()) {
-      await _dbProvider.open(_dbPath);
-    }
+    var _dbPath = await getDatabasesPath();
+    _dbPath = join(_dbPath, "todo.db");
+    await _dbProvider.open(_dbPath);
   }
 
   ///关闭数据库
   Future _closeDatabase() async {
-    if (_dbProvider.dbIsOpen()) {
-      await _dbProvider.close();
-    }
+    await _dbProvider.close();
   }
 
   ///插入
@@ -137,7 +127,9 @@ class _ListPageState extends State<ListPage> {
     await _openDatabase();
     todoNew.id = await _dbProvider.insert(todoNew);
     await _closeDatabase();
-    AlarManager.setAlarm(todoNew.id, todoNew.content, todoNew.warningTime);
+    if (todoNew.isWarning) {
+      AlarManager.setAlarm(todoNew.id, todoNew.content, todoNew.warningTime);
+    }
     setState(() {
       _items.add(todoNew);
     });
@@ -149,7 +141,9 @@ class _ListPageState extends State<ListPage> {
     int result = await _dbProvider.delete(todo.id);
     await _closeDatabase();
     if (result == 1) {
-      AlarManager.cancelAlarm(todo.id);
+      if (todo.isWarning) {
+        AlarManager.cancelAlarm(todo.id);
+      }
       Scaffold.of(context).showSnackBar(
           new SnackBar(content: new Text("${todo.warningTime} 日期事件已经删除")));
       setState(() {
@@ -178,14 +172,15 @@ class _ListPageState extends State<ListPage> {
   ///查找
   Future _findTodoList() async {
     await _openDatabase();
-    List<Map> mapList = await _dbProvider.getListByType(widget._evenType.index.toString());
+    List<Map> mapList =
+        await _dbProvider.getListByType(widget._evenType.index.toString());
     await _closeDatabase();
     _items.clear();
     for (var map in mapList) {
       _items.add(Todo.fromMap(map));
     }
     setState(() {
-      _loadingState = LoadingState.LOADING_SUCCESS;
+      _loadingState = LoadingState.LOAD_SUCCESS;
     });
   }
 }
