@@ -18,7 +18,7 @@ class HomePage extends StatelessWidget {
           appBar: new AppBar(
             title: new Text("记事本"),
             centerTitle: true,
-            backgroundColor: Colors.blue,
+            backgroundColor: Multicolor.GREEN_TITLE,
           ),
           body: new GridView.count(
             primary: false,
