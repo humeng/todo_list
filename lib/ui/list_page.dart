@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import 'package:todo_list/constant/event_type.dart';
 import 'package:todo_list/constant/loading_state.dart';
+import 'package:todo_list/constant/multi_color.dart';
 import 'package:todo_list/plugin/alarm_manager.dart';
 import 'package:todo_list/ui/edit_page.dart';
 import 'package:todo_list/util/database_helper.dart';
@@ -43,7 +44,7 @@ class _ListPageState extends State<ListPage> {
     Widget widget;
     switch (_loadingState) {
       case LoadingState.LOADING:
-        widget = new LoadingWidget();
+        widget = LoadingWidget.buildCircularProgress();
         break;
       case LoadingState.LOAD_SUCCESS:
         widget = buildListDataWidget(context);
@@ -58,6 +59,7 @@ class _ListPageState extends State<ListPage> {
   Widget buildListDataWidget(BuildContext context) {
     final eventType = widget._evenType;
     return new Scaffold(
+        backgroundColor: Multicolor.GRAY_246,
         appBar: new AppBar(
           leading: new IconButton(
               onPressed: () {
@@ -76,21 +78,27 @@ class _ListPageState extends State<ListPage> {
             itemCount: _items.length,
             itemBuilder: (BuildContext context, int index) {
               var todo = _items[index];
-              return new Slidable(
-                delegate: SlidableScrollDelegate(),
-                actionExtentRatio: 0.25,
-                secondaryActions: <Widget>[
-                  IconSlideAction(
-                      caption: 'Delete',
-                      color: Colors.red,
-                      icon: Icons.delete,
-                      onTap: () => _deleteTodo(todo, context)),
-                ],
-                child: new ListTile(
-                    title: new Text(todo.content),
-                    subtitle: new Text(todo.warningTime),
-                    onTap: () => _pushEditPage(context, eventType, todo: todo)),
-              );
+              return new Container(
+                  margin: EdgeInsets.all(1.0),
+                  decoration: new BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.all(new Radius.circular(5.0))),
+                  child: new Slidable(
+                    delegate: SlidableScrollDelegate(),
+                    actionExtentRatio: 0.2,
+                    secondaryActions: <Widget>[
+                      IconSlideAction(
+                          caption: '删除',
+                          color: Colors.red,
+                          icon: Icons.delete,
+                          onTap: () => _deleteTodo(todo, context)),
+                    ],
+                    child: new ListTile(
+                        title: new Text(todo.content),
+                        subtitle: new Text(todo.warningTime),
+                        onTap: () =>
+                            _pushEditPage(context, eventType, todo: todo)),
+                  ));
             }));
   }
 
