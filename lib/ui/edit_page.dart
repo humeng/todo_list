@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:todo_list/constant/multi_color.dart';
 import 'package:todo_list/util/database_helper.dart';
 import 'package:todo_list/constant/event_type.dart';
 import 'package:flutter/cupertino.dart';
@@ -18,18 +19,33 @@ class EditPage extends StatefulWidget {
 class _EditPageData extends State<EditPage> {
 
   static String content = "";
+  static String noConfigTime = "无提醒";
   DateTime _dateTime;
   TimeOfDay _timeOfDay;
   bool _switchValue = false;
+  String warningTime = "";
   //文本的控制器
   TextEditingController _controller = TextEditingController();
 
   Future getTodoListFormDB() async {
     if(widget.todo != null ){
       _controller.text=widget.todo.content;
-      _switchValue = widget.todo == null ? false : widget.todo.isWarning;
+      _switchValue = widget.todo.isWarning;
+      if(_switchValue){
+        setState(() {
+          _switchValue = widget.todo.isWarning;
+        });
+      }
+      if(widget.todo.warningTime != null && (widget.todo.warningTime!="")){
+        List<String> dateAndTime = widget.todo.warningTime.replaceAll("/", "-").split(" ");
+        String dateStr=dateAndTime[0];
+        DateTime date = DateTime.parse(dateStr);
+        List<String> mAndSecond = dateAndTime[1].split(":");
+        TimeOfDay time = TimeOfDay.fromDateTime(new DateTime(0,0,0,int.parse(mAndSecond[0]),int.parse(mAndSecond[1]),0));
+        _dateTime = date;
+        _timeOfDay = time;
+      }
     }
-
   }
 
   @override
@@ -53,63 +69,113 @@ class _EditPageData extends State<EditPage> {
             ]
         ),
         body: new Container(
-          child: new SingleChildScrollView(
             child: new Column(
             children: <Widget>[
-              new TextField(
-                  controller: _controller,
-                  maxLines:26,
-                  decoration:new InputDecoration(
-                    hintText:"记录内容",
-                  )
+              new Expanded(
+                
+            child: new SingleChildScrollView(
+                padding: EdgeInsets.all(10.0),
+                child: new TextField(
+                    controller: _controller,
+                    maxLines:30,
+                    decoration:new InputDecoration(
+                      hintText:"记录内容",
+                      border: InputBorder.none,
+                      filled:true,
+                      fillColor: Multicolor.GRAY_246
+
+                    )
+                )
+            )
               ),
-              new Row(
+
+              new Stack(
                 children: <Widget>[
-                  new Padding(
-                    padding: new EdgeInsets.only(left:20.0,right: 20.0,top: 20.0),
+                  new Container(
+                    padding: new EdgeInsets.only(left:10.0,right: 10.0,top: 25.0),
                     child: new Text(
-                        "提醒闹钟",
+                        "开启闹钟",
                         style:new TextStyle(
                             fontSize:20.0
                         ),
                     ),
                   ),
-                  new RaisedButton(
-                      padding: new EdgeInsets.only(top:25.0),
-                      child: new Text(
-                        (_dateTime == null?"     无提醒 ":
-                              _dateTime.year.toString()+"年"+
-                              _dateTime.month.toString()+"月"+
-                              _dateTime.day.toString()+"日"+"-"+
-                                  (_timeOfDay == null ? "" : _timeOfDay.hour.toString()+"时"+
-                                      _timeOfDay.minute.toString()+"分"))
+                  new Align(
+                    alignment: FractionalOffset.centerRight,
+                    //alignment:const FractionalOffset(0.3, 0.1),
+                    child:new Container(
+                      padding: new EdgeInsets.only(top:20.0,right: 10.0),
+                      child: new CupertinoSwitch(
+                        value: _switchValue,
+                        onChanged: (bool value) {
+                          setState(() {
+                            _switchValue = value;
+                            if(!_switchValue){
+                              _dateTime = null;
+                              _timeOfDay = null;
+                            }else if(_switchValue && (widget.todo != null && widget.todo.warningTime != "")){
+                              List<String> dateAndTime = widget.todo.warningTime.replaceAll("/", "-").split(" ");
+                              String dateStr=dateAndTime[0];
+                              DateTime date = DateTime.parse(dateStr);
+                              List<String> mAndSecond = dateAndTime[1].split(":");
+                              TimeOfDay time = TimeOfDay.fromDateTime(new DateTime(0,0,0,int.parse(mAndSecond[0]),int.parse(mAndSecond[1]),0));
+                              _dateTime = date;
+                              _timeOfDay = time;
+                            }
+                          });
+                        },
                       ),
-                    onPressed: null,
-                      highlightColor:Colors.red
-                  ),
-                  new Padding(
-                    padding: new EdgeInsets.only(top:25.0),
-                    child: new CupertinoSwitch(
-                      value: _switchValue,
-                      onChanged: (bool value) {
-                        setState(() {
-                          _switchValue = value;
-                          if(_switchValue){
-
-                          }
-                        });
-                      },
                     ),
-                  )
+                  ),
                 ],
               ),
+              new Stack(
+                children: <Widget>[
+                  new Container(
+                    padding: new EdgeInsets.only(left:10.0,right: 10.0,top: 9.0),
+                    child: new Text(
+                      "提醒时间",
+                      style:new TextStyle(
+                          fontSize:20.0
+                      ),
+                    ),
+                  ),
+                  new Align(
+                    child:new Container(
+                      height: 48.0,
+                      padding: EdgeInsets.only(top:15.0),
+                      child: new Text(
+                          (_dateTime == null?(_switchValue?"请选择提醒时间":noConfigTime):
+                          _dateTime.year.toString()+"年"+
+                              _dateTime.month.toString()+"月"+
+                              _dateTime.day.toString()+"日"+"-"+
+                              (_timeOfDay == null ? "" : _timeOfDay.hour.toString()+"时"+
+                                  _timeOfDay.minute.toString()+"分"))
+                      ),
+                    ),
+                  ),
+                  new Align(
+                      alignment: FractionalOffset.centerRight,
+                      child: _switchValue ? new Container(
+                          child: new IconButton(
+                            icon:Icon(Icons.access_alarm),
+                            onPressed: () =>selectTime(),
+                          )
+                      ):null
+                  )
+                ],
+              )
             ],
            ),
-          )
         )
     );
   }
 
+  void selectTime(){
+    if(_switchValue){
+      _showDatePicker();
+    }
+  }
 
   //调用时间控件
   void _showDatePicker(){
