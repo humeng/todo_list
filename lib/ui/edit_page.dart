@@ -215,7 +215,25 @@ class _EditPageData extends State<EditPage> {
     if(todo == null){
       todo = new Todo();
     }
-    if(content == null || content == ""){
+    if((content == null || content == "")){
+      showDialog(
+          context: context,
+          builder: (_) => new AlertDialog(
+              title: new Text("提示"),
+              content: new Text("保存内容不能为空。"),
+          )
+      );
+      return;
+    }
+
+    if((_switchValue && (_dateTime == null || _timeOfDay == null))){
+      showDialog(
+          context: context,
+          builder: (_) => new AlertDialog(
+              title: new Text("提示"),
+              content: new Text("请设置提示时间"),
+          )
+      );
       return;
     }
     todo.type = type;
