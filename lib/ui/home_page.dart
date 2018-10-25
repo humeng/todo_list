@@ -74,7 +74,7 @@ class _ItemWidgetSate extends State<ItemWidget> {
         child: new Text(
           _eventType.event,
           style: new TextStyle(
-              color: Colors.white, fontSize: 20.0, fontStyle: FontStyle.normal),
+              color: Colors.white, fontSize: 18.0, fontStyle: FontStyle.normal),
         ),
         padding: new EdgeInsets.all(10.0),
         height: 100.0,
