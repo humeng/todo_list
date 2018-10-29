@@ -1,252 +1,219 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:todo_list/constant/multi_color.dart';
-import 'package:todo_list/util/database_helper.dart';
 import 'package:todo_list/constant/event_type.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:todo_list/db/entry/todo_entry.dart';
+import 'package:todo_list/util/date_format_util.dart';
+import 'package:todo_list/util/toast_util.dart';
 
 class EditPage extends StatefulWidget {
-  final Todo todo;
-  final EventType eventType;
+  final Todo todo; //可选命名参数不能为私有的
+  final EventType _eventType;
 
-  EditPage(this.eventType,{Key key,this.todo}) : super(key: key);
+  EditPage(this._eventType, {this.todo, Key key}) : super(key: key);
 
   @override
-  _EditPageData createState() => new _EditPageData();
+  State<StatefulWidget> createState() {
+    return new _EditPageState();
+  }
 }
 
-class _EditPageData extends State<EditPage> {
+class _EditPageState extends State<EditPage> {
+  EventType _eventType;
+  Todo _todo;
+  TextEditingController _textEditingController;
 
-  static String content = "";
-  static String noConfigTime = "无提醒";
-  DateTime _dateTime;
-  TimeOfDay _timeOfDay;
-  bool _switchValue = false;
-  String warningTime = "";
-  //文本的控制器
-  TextEditingController _controller = TextEditingController();
-
-  Future getTodoListFormDB() async {
-    if(widget.todo != null ){
-      _controller.text=widget.todo.content;
-      _switchValue = widget.todo.isWarning;
-      if(_switchValue){
-        setState(() {
-          _switchValue = widget.todo.isWarning;
-        });
-      }
-      if(widget.todo.warningTime != null && (widget.todo.warningTime!="")){
-        List<String> dateAndTime = widget.todo.warningTime.replaceAll("/", "-").split(" ");
-        String dateStr=dateAndTime[0];
-        DateTime date = DateTime.parse(dateStr);
-        List<String> mAndSecond = dateAndTime[1].split(":");
-        TimeOfDay time = TimeOfDay.fromDateTime(new DateTime(0,0,0,int.parse(mAndSecond[0]),int.parse(mAndSecond[1]),0));
-        _dateTime = date;
-        _timeOfDay = time;
-      }
-    }
-  }
+  bool _warningTimeIsVisible;
 
   @override
   void initState() {
     super.initState();
-    getTodoListFormDB();
+    initData();
   }
 
   @override
   Widget build(BuildContext context) {
     return new Scaffold(
-        appBar: new AppBar(
-            title: new Text( widget.eventType.event+"-记事本"),
-            elevation: 0.0,
-            backgroundColor: widget.eventType.color,
-            actions: <Widget>[
-              IconButton(
-                icon: Icon(Icons.check),
-                onPressed: ()=>saveData(context,_controller.text, widget.eventType.index.toString(),widget.todo),
-              )
-            ]
+      appBar: new AppBar(
+        backgroundColor: _eventType.color,
+        title: new Text(
+          _eventType.event + (_todo.id != null ? "-编辑" : "-新增"),
+          style: new TextStyle(fontSize: 20.0, fontStyle: FontStyle.normal),
         ),
-        body: new Container(
-            child: new Column(
-            children: <Widget>[
-              new Expanded(
-                
-            child: new SingleChildScrollView(
-                padding: EdgeInsets.all(10.0),
-                child: new TextField(
-                    controller: _controller,
-                    maxLines:30,
-                    decoration:new InputDecoration(
-                      hintText:"记录内容",
-                      border: InputBorder.none,
-                      filled:true,
-                      fillColor: Multicolor.GRAY_246
-
-                    )
+        leading: new IconButton(
+            icon: new Icon(Icons.arrow_back),
+            onPressed: () {
+              Navigator.pop(context);
+            }),
+        actions: <Widget>[
+          new IconButton(
+              icon: new Icon(Icons.check),
+              onPressed: () {
+                if (_checkParameters()) {
+                  Navigator.pop(context, _todo);
+                }
+              }),
+        ],
+      ),
+      body: new Column(
+        children: <Widget>[
+          new Expanded(
+            child: new Container(
+              padding: EdgeInsets.only(left: 10.0, right: 10.0, bottom: 10.0),
+              margin: EdgeInsets.only(
+                  left: 10.0, top: 10.0, right: 10.0, bottom: 5.0),
+              child: new TextField(
+                controller: _textEditingController,
+                decoration: new InputDecoration(border: InputBorder.none),
+                onChanged: _onTextChanged,
+              ),
+              decoration: new BoxDecoration(
+                  color: Multicolor.GRAY_246,
+                  borderRadius: BorderRadius.all(new Radius.circular(10.0))),
+            ),
+          ),
+          new Container(
+            height: 45.0,
+            child: new Stack(
+              children: <Widget>[
+                new Align(
+                  alignment: Alignment.centerLeft,
+                  child: new Text(
+                    "设置闹钟",
+                    textAlign: TextAlign.center,
+                    style: new TextStyle(
+                        fontSize: 16.0, fontStyle: FontStyle.normal),
+                  ),
+                ),
+                new Align(
+                  alignment: Alignment.centerRight,
+                  child: new CupertinoSwitch(
+                    activeColor: Colors.red,
+                    value: _todo.isWarning,
+                    onChanged: _onWarningChanged,
+                  ),
                 )
-            )
-              ),
-
-              new Stack(
-                children: <Widget>[
-                  new Container(
-                    padding: new EdgeInsets.only(left:10.0,right: 10.0,top: 25.0),
-                    child: new Text(
-                        "开启闹钟",
-                        style:new TextStyle(
-                            fontSize:20.0
-                        ),
-                    ),
-                  ),
-                  new Align(
-                    alignment: FractionalOffset.centerRight,
-                    //alignment:const FractionalOffset(0.3, 0.1),
-                    child:new Container(
-                      padding: new EdgeInsets.only(top:20.0,right: 10.0),
-                      child: new CupertinoSwitch(
-                        value: _switchValue,
-                        onChanged: (bool value) {
-                          setState(() {
-                            _switchValue = value;
-                            if(!_switchValue){
-                              _dateTime = null;
-                              _timeOfDay = null;
-                            }else if(_switchValue && (widget.todo != null && widget.todo.warningTime != "")){
-                              List<String> dateAndTime = widget.todo.warningTime.replaceAll("/", "-").split(" ");
-                              String dateStr=dateAndTime[0];
-                              DateTime date = DateTime.parse(dateStr);
-                              List<String> mAndSecond = dateAndTime[1].split(":");
-                              TimeOfDay time = TimeOfDay.fromDateTime(new DateTime(0,0,0,int.parse(mAndSecond[0]),int.parse(mAndSecond[1]),0));
-                              _dateTime = date;
-                              _timeOfDay = time;
-                            }
-                          });
-                        },
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              new Stack(
-                children: <Widget>[
-                  new Container(
-                    padding: new EdgeInsets.only(left:10.0,right: 10.0,top: 9.0),
-                    child: new Text(
-                      "提醒时间",
-                      style:new TextStyle(
-                          fontSize:20.0
-                      ),
-                    ),
-                  ),
-                  new Align(
-                    child:new Container(
-                      height: 48.0,
-                      padding: EdgeInsets.only(top:15.0),
+              ],
+            ),
+            decoration: new BoxDecoration(
+                border: new Border(
+                    bottom: new BorderSide(
+                        color: Multicolor.GRAY_246, width: 2.0))),
+            padding: EdgeInsets.only(left: 20.0, right: 20.0),
+          ),
+          new Offstage(
+            offstage: !_warningTimeIsVisible,
+            child: new GestureDetector(
+              excludeFromSemantics: false,
+              onTap: _selectTime,
+              child: new Container(
+                height: 45.0,
+                child: new Stack(
+                  children: <Widget>[
+                    new Align(
+                      alignment: Alignment.centerLeft,
                       child: new Text(
-                          (_dateTime == null?(_switchValue?"请选择提醒时间":noConfigTime):
-                          _dateTime.year.toString()+"年"+
-                              _dateTime.month.toString()+"月"+
-                              _dateTime.day.toString()+"日"+"-"+
-                              (_timeOfDay == null ? "" : _timeOfDay.hour.toString()+"时"+
-                                  _timeOfDay.minute.toString()+"分"))
+                        "提醒时间",
+                        style: new TextStyle(
+                            fontSize: 16.0, fontStyle: FontStyle.normal),
                       ),
                     ),
-                  ),
-                  new Align(
-                      alignment: FractionalOffset.centerRight,
-                      child: _switchValue ? new Container(
-                          child: new IconButton(
-                            icon:Icon(Icons.access_alarm),
-                            onPressed: () =>selectTime(),
-                          )
-                      ):null
-                  )
-                ],
-              )
-            ],
-           ),
-        )
+                    new Align(
+                      alignment: Alignment.centerRight,
+                      child: new Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: <Widget>[
+                          new Text(
+                            _todo.warningTime.isNotEmpty
+                                ? _todo.warningTime
+                                : "请选择",
+                            style: new TextStyle(
+                                fontSize: 16.0, fontStyle: FontStyle.normal),
+                          ),
+                          new Image.asset(
+                            "images/more.png",
+                            height: 15.0,
+                            width: 10.0,
+                            excludeFromSemantics: false,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                padding: EdgeInsets.only(left: 20.0, right: 20.0),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  void selectTime(){
-    if(_switchValue){
-      _showDatePicker();
+  ///初始化数据
+  void initData() {
+    _eventType = widget._eventType;
+    if (widget.todo == null) {
+      _todo = new Todo();
+      _todo.type = _eventType.type;
+    } else {
+      _todo = widget.todo;
+    }
+    _textEditingController = new TextEditingController(
+      text: _todo.content,
+    );
+    _warningTimeIsVisible = _todo.isWarning;
+  }
+
+  ///当输入内容改变的时候
+  void _onTextChanged(String value) {
+    if (value.isNotEmpty) {
+      _todo.content = value;
     }
   }
 
-  //调用时间控件
-  void _showDatePicker(){
-    _selectTime(context);
-    _selectDate(context);
+  ///提醒改变的时候
+  void _onWarningChanged(bool value) {
+    setState(() {
+      _todo.isWarning = value;
+      _warningTimeIsVisible = value;
+    });
   }
-  //日期控件
-  Future<Null> _selectDate(BuildContext context) async{
-    final DateTime _picked = await showDatePicker(
+
+  //选择时间
+  void _selectTime() async {
+    DateTime dateTime = await showDatePicker(
         context: context,
-        initialDate: _dateTime == null? new DateTime.now() : _dateTime,
-        firstDate: new DateTime(2016),
-        lastDate: new DateTime(2050)
-    );
-    if(_picked != null){
-      print(_picked);
-      setState(() {
-        _dateTime = _picked;
-      });
+        initialDate: new DateTime.now(),
+        firstDate: new DateTime(new DateTime.now().year),
+        lastDate: new DateTime(new DateTime.now().year + 5));
+    if (dateTime != null) {
+      TimeOfDay timeOfDay = await showTimePicker(
+          context: context, initialTime: new TimeOfDay.now());
+      if (timeOfDay != null) {
+        setState(() {
+          _todo.warningTime = DateUtil.format(dateTime, timeOfDay);
+        });
+      }
     }
   }
 
-  Future<Null> _selectTime(BuildContext context)async{
-    final TimeOfDay _picked = await showTimePicker(
-        context: context,
-        initialTime: new TimeOfDay.now()
-    );
-    if(_picked != null){
-      print(_picked);
-      setState(() {
-        _timeOfDay = _picked;
-      });
+  ///检查参数
+  bool _checkParameters() {
+    if (_todo.content.isEmpty) {
+      ToastUtil.showCenterShort("请输入提醒内容");
+      return false;
+    } else {
+      if (_todo.isWarning) {
+        if (_todo.warningTime.isEmpty) {
+          ToastUtil.showCenterShort("请选择提醒时间");
+          return false;
+        } else {
+          return true;
+        }
+      } else {
+        return true;
+      }
     }
-  }
-
-  void saveData (BuildContext context, String content,String type,Todo todo) async{
-    if(todo == null){
-      todo = new Todo();
-    }
-    if((content == null || content == "")){
-      showDialog(
-          context: context,
-          builder: (_) => new AlertDialog(
-              title: new Text("提示"),
-              content: new Text("保存内容不能为空。"),
-          )
-      );
-      return;
-    }
-
-    if((_switchValue && (_dateTime == null || _timeOfDay == null))){
-      showDialog(
-          context: context,
-          builder: (_) => new AlertDialog(
-              title: new Text("提示"),
-              content: new Text("请设置提示时间"),
-          )
-      );
-      return;
-    }
-    todo.type = type;
-    todo.content = content;
-    todo.isWarning = _switchValue;
-    todo.warningTime = _dateTime == null? "" :
-                       _dateTime.year.toString()+"/"
-                      +_dateTime.month.toString()+"/"
-                      +_dateTime.day.toString()+" "
-                      +_timeOfDay.hour.toString()+":"
-                      +_timeOfDay.minute.toString();
-    todo.isDelete = false;
-
-    Navigator.pop(context,todo);
   }
 }

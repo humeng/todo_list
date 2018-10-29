@@ -2,12 +2,15 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:path/path.dart';
+import 'package:todo_list/constant/db_operation_type.dart';
 import 'package:todo_list/constant/event_type.dart';
 import 'package:todo_list/constant/loading_state.dart';
 import 'package:todo_list/constant/multi_color.dart';
+import 'package:todo_list/db/dao/todo_dao.dart';
+import 'package:todo_list/db/entry/todo_entry.dart';
 import 'package:todo_list/plugin/alarm_manager.dart';
 import 'package:todo_list/ui/edit_page.dart';
-import 'package:todo_list/util/database_helper.dart';
+import 'package:todo_list/db/db_helper.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:todo_list/widget/loading_widget.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
@@ -29,8 +32,10 @@ class _ListPageState extends State<ListPage> {
   ///是否正在加载
   LoadingState _loadingState;
 
+  final TodoDao _todoDao = new TodoDao();
+
   ///数据库处理器
-  final DbProvider _dbProvider = new DbProvider();
+  final DatabaseHelper _dbProvider = DatabaseHelper.instance;
 
   @override
   void initState() {
@@ -118,37 +123,25 @@ class _ListPageState extends State<ListPage> {
     }
   }
 
-  ////打开数据库
-  Future _openDatabase() async {
-    var _dbPath = await getDatabasesPath();
-    _dbPath = join(_dbPath, "todo.db");
-    await _dbProvider.open(_dbPath);
-  }
-
-  ///关闭数据库
-  Future _closeDatabase() async {
-    await _dbProvider.close();
-  }
-
   ///插入
   void _insertTodo(Todo todoNew) async {
-    await _openDatabase();
-    todoNew.id = await _dbProvider.insert(todoNew);
-    await _closeDatabase();
-    if (todoNew.isWarning) {
-      AlarManager.setAlarm(todoNew.id, todoNew.content, todoNew.warningTime);
+    bool result =
+        await _dbProvider.handle(DBOperation.ADD, _todoDao, t: todoNew);
+    if (result) {
+      if (todoNew.isWarning) {
+        AlarManager.setAlarm(todoNew.id, todoNew.content, todoNew.warningTime);
+      }
+      setState(() {
+        _items.add(todoNew);
+      });
     }
-    setState(() {
-      _items.add(todoNew);
-    });
   }
 
   ///删除
   void _deleteTodo(Todo todo, BuildContext context) async {
-    await _openDatabase();
-    int result = await _dbProvider.delete(todo.id);
-    await _closeDatabase();
-    if (result == 1) {
+    bool result =
+        await _dbProvider.handle(DBOperation.DELETE, _todoDao, t: todo);
+    if (result) {
       if (todo.isWarning) {
         AlarManager.cancelAlarm(todo.id);
       }
@@ -162,10 +155,9 @@ class _ListPageState extends State<ListPage> {
 
   ///更新
   void _updateTodo(Todo todoNew, Todo todo) async {
-    await _openDatabase();
-    int result = await _dbProvider.update(todoNew);
-    await _closeDatabase();
-    if (result == 1) {
+    bool result =
+        await _dbProvider.handle(DBOperation.UPDATE, _todoDao, t: todoNew);
+    if (result) {
       if (todoNew.isWarning) {
         AlarManager.setAlarm(todoNew.id, todoNew.content, todoNew.warningTime);
       } else {
@@ -179,10 +171,8 @@ class _ListPageState extends State<ListPage> {
 
   ///查找
   Future _findTodoList() async {
-    await _openDatabase();
-    List<Map> mapList =
-        await _dbProvider.getListByType(widget._evenType.index.toString());
-    await _closeDatabase();
+    List<Map> mapList = await _dbProvider.handle(DBOperation.QUERY, _todoDao,
+        type: widget._evenType.type);
     _items.clear();
     for (var map in mapList) {
       _items.add(Todo.fromMap(map));

@@ -2,8 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/flutter_notepad.iml" filepath="$PROJECT_DIR$/flutter_notepad.iml" />
       <module fileurl="file://$PROJECT_DIR$/android/app/src/main/main.iml" filepath="$PROJECT_DIR$/android/app/src/main/main.iml" />
-      <module fileurl="file://$PROJECT_DIR$/todo_list.iml" filepath="$PROJECT_DIR$/todo_list.iml" />
     </modules>
   </component>
 </project>

@@ -93,6 +93,13 @@
             </list>
           </value>
         </entry>
+        <entry key="fluttertoast">
+          <value>
+            <list>
+              <option value="D:/flutter/.pub-cache/hosted/pub.flutter-io.cn/fluttertoast-2.0.9/lib" />
+            </list>
+          </value>
+        </entry>
         <entry key="front_end">
           <value>
             <list>
@@ -422,6 +429,7 @@
       <root url="file://D:/flutter/.pub-cache/hosted/pub.flutter-io.cn/csslib-0.14.5/lib" />
       <root url="file://D:/flutter/.pub-cache/hosted/pub.flutter-io.cn/cupertino_icons-0.1.2/lib" />
       <root url="file://D:/flutter/.pub-cache/hosted/pub.flutter-io.cn/flutter_slidable-0.4.9/lib" />
+      <root url="file://D:/flutter/.pub-cache/hosted/pub.flutter-io.cn/fluttertoast-2.0.9/lib" />
       <root url="file://D:/flutter/.pub-cache/hosted/pub.flutter-io.cn/front_end-0.1.4/lib" />
       <root url="file://D:/flutter/.pub-cache/hosted/pub.flutter-io.cn/glob-1.1.7/lib" />
       <root url="file://D:/flutter/.pub-cache/hosted/pub.flutter-io.cn/html-0.13.3+3/lib" />
